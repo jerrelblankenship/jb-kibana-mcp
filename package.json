@@ -11,7 +11,9 @@
     "start": "node dist/index.js",
     "start:http": "node dist/http-server.js",
     "watch": "tsc --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "mcp",
@@ -31,8 +33,12 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.5",
+    "@types/supertest": "^6.0.2",
+    "@vitest/coverage-v8": "^2.1.8",
+    "supertest": "^7.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "engines": {
     "node": ">=20.0.0"
