@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  kibana-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kibana-mcp-server
+    ports:
+      - "3000:3000"
+    environment:
+      # Kibana Configuration
+      - KIBANA_URL=${KIBANA_URL:-https://localhost:5601}
+      - KIBANA_API_KEY=${KIBANA_API_KEY}
+      # Alternative: Username/Password
+      - KIBANA_USERNAME=${KIBANA_USERNAME}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+
+      # Server Configuration
+      - MCP_TRANSPORT=http
+      - HTTP_PORT=3000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=${NODE_ENV:-production}
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Resource limits (optional but recommended)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+    # Networks
+    networks:
+      - mcp-network
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mcp-network:
+    driver: bridge
