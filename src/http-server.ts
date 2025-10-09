@@ -31,6 +31,13 @@ if (
 
 // Server configuration
 const PORT = parseInt(process.env.HTTP_PORT || '3000', 10);
+
+// Validate port number
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  console.error('Error: HTTP_PORT must be a valid port number (1-65535)');
+  process.exit(1);
+}
+
 const config: ServerConfig = {
   kibana: {
     url: process.env.KIBANA_URL,
@@ -74,11 +81,22 @@ app.get('/sse', async (req, res) => {
   const mcpServer = createMcpServer(config);
   const transport = new SSEServerTransport('/message', res);
 
-  await mcpServer.connect(transport);
+  try {
+    await mcpServer.connect(transport);
+  } catch (error) {
+    console.error('Failed to establish SSE connection:', error);
+    res.status(500).send('Failed to establish SSE connection');
+    return;
+  }
 
   // Handle connection close
-  req.on('close', () => {
+  req.on('close', async () => {
     console.log('SSE connection closed');
+    try {
+      await mcpServer.close();
+    } catch (error) {
+      console.error('Error closing MCP server:', error);
+    }
   });
 });
 

@@ -2,7 +2,6 @@
  * MCP Tools - Executable functions
  */
 
-import { z } from 'zod';
 import { KibanaClient } from '../kibana/client.js';
 
 export function registerTools(server: any, kibanaClient: KibanaClient) {

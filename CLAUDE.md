@@ -214,7 +214,6 @@ curl http://localhost:3000/health
 - `axios` - HTTP client for Kibana API
 - `express` - HTTP server for SSE transport
 - `dotenv` - Environment configuration
-- `zod` - Schema validation
 
 **Development:**
 - `typescript` - TypeScript compiler
