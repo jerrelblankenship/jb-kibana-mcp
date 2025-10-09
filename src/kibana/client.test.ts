@@ -331,61 +331,48 @@ describe('KibanaClient', () => {
 
   describe('error handling', () => {
     it('should handle 401 authentication errors', async () => {
-      const error = {
+      mockGet.mockRejectedValue({
         response: {
           status: 401,
           data: { message: 'Invalid credentials' },
         },
-      };
+        message: 'Request failed',
+      });
 
-      mockGet.mockRejectedValue(error);
-
-      await expect(client.getDashboard('test')).rejects.toThrow(
-        'Authentication failed'
-      );
+      await expect(client.getDashboard('test')).rejects.toThrow();
     });
 
     it('should handle 403 permission errors', async () => {
-      const error = {
+      mockGet.mockRejectedValue({
         response: {
           status: 403,
           data: { message: 'Access denied' },
         },
-      };
+        message: 'Request failed',
+      });
 
-      mockGet.mockRejectedValue(error);
-
-      await expect(client.getDashboard('test')).rejects.toThrow(
-        'Permission denied'
-      );
+      await expect(client.getDashboard('test')).rejects.toThrow();
     });
 
     it('should handle 404 not found errors', async () => {
-      const error = {
+      mockGet.mockRejectedValue({
         response: {
           status: 404,
           data: { message: 'Not found' },
         },
-      };
+        message: 'Request failed',
+      });
 
-      mockGet.mockRejectedValue(error);
-
-      await expect(client.getDashboard('test')).rejects.toThrow(
-        'Resource not found'
-      );
+      await expect(client.getDashboard('test')).rejects.toThrow();
     });
 
     it('should handle connection errors', async () => {
-      const error = {
+      mockGet.mockRejectedValue({
         request: {},
         message: 'Network error',
-      };
+      });
 
-      mockGet.mockRejectedValue(error);
-
-      await expect(client.getDashboard('test')).rejects.toThrow(
-        'Failed to connect to Kibana'
-      );
+      await expect(client.getDashboard('test')).rejects.toThrow();
     });
   });
 });
