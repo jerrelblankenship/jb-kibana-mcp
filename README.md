@@ -188,7 +188,120 @@ Query Elasticsearch data through Kibana.
 
 ## Connecting to AI Assistants
 
+### Claude Code
+
+Claude Code connects to MCP servers running over HTTP/SSE. You have two options:
+
+#### Option 1: Using Docker (Recommended)
+
+1. **Start the server**:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Add to Claude Code settings** (`~/.config/claude-code/settings.json` on Linux/macOS or `%APPDATA%\claude-code\settings.json` on Windows):
+   ```json
+   {
+     "mcpServers": {
+       "kibana": {
+         "url": "http://localhost:3000"
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Code** to load the new MCP server.
+
+#### Option 2: Direct Configuration with Environment Variables
+
+```json
+{
+  "mcpServers": {
+    "kibana": {
+      "url": "http://localhost:3000",
+      "env": {
+        "KIBANA_URL": "https://your-kibana.com",
+        "KIBANA_API_KEY": "your-api-key",
+        "MCP_TRANSPORT": "http",
+        "HTTP_PORT": "3000"
+      }
+    }
+  }
+}
+```
+
+Then start the server manually:
+```bash
+npm run start:http
+```
+
+**Verification**: In Claude Code, type `/mcp` to see available servers. You should see "kibana" in the list with resources and tools.
+
+### Amazon Q Developer
+
+Amazon Q Developer also supports MCP servers via HTTP/SSE transport.
+
+#### Setup with Docker
+
+1. **Start the Kibana MCP server**:
+   ```bash
+   docker run -d \
+     --name kibana-mcp \
+     -p 3000:3000 \
+     -e KIBANA_URL=https://your-kibana.com \
+     -e KIBANA_API_KEY=your-api-key \
+     -e MCP_TRANSPORT=http \
+     kibana-mcp:latest
+   ```
+
+2. **Configure Amazon Q Developer**:
+
+   Edit your Amazon Q configuration file (location varies by IDE):
+
+   **VS Code** (`settings.json`):
+   ```json
+   {
+     "amazonQ.mcp.servers": {
+       "kibana": {
+         "url": "http://localhost:3000/sse"
+       }
+     }
+   }
+   ```
+
+   **JetBrains IDEs** (Settings → Tools → Amazon Q):
+   - Add MCP Server
+   - Name: `kibana`
+   - URL: `http://localhost:3000/sse`
+
+3. **Restart your IDE** to activate the connection.
+
+#### Alternative: MCP Proxy for stdio
+
+If your tool requires stdio transport, use `mcp-proxy` to bridge:
+
+```bash
+# Install mcp-proxy globally
+npm install -g @modelcontextprotocol/mcp-proxy
+
+# Start the HTTP server
+docker-compose up -d
+
+# Run proxy in stdio mode
+mcp-proxy stdio http://localhost:3000/sse
+```
+
+Then configure Amazon Q to use the proxy as a stdio command:
+```json
+{
+  "command": "mcp-proxy",
+  "args": ["stdio", "http://localhost:3000/sse"]
+}
+```
+
 ### Claude Desktop (stdio mode)
+
+For local Claude Desktop app (not Claude Code), use stdio transport:
 
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
@@ -207,17 +320,17 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-### HTTP/SSE Clients
+### Generic HTTP/SSE Clients
 
-Connect to the HTTP server at:
+Connect any MCP client to the HTTP server at:
 ```
 http://localhost:3000/sse
 ```
 
-Or use `mcp-proxy` to bridge stdio clients to the HTTP server:
-```bash
-npx mcp-proxy stdio http://localhost:3000
-```
+The server exposes these endpoints:
+- `GET /health` - Health check
+- `GET /info` - Server information
+- `GET /sse` - SSE connection endpoint for MCP protocol
 
 ## Docker Deployment
 
