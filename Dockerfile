@@ -20,7 +20,7 @@ RUN npm run build
 FROM node:20-slim
 
 # Create non-root user
-RUN useradd -m -u 1000 mcpuser
+RUN useradd -m -u 1001 mcpuser
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
