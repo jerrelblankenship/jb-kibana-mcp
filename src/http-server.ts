@@ -53,7 +53,7 @@ const app = express();
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'healthy',
     service: 'kibana-mcp-server',
@@ -63,7 +63,7 @@ app.get('/health', (req, res) => {
 });
 
 // Server info endpoint
-app.get('/info', (req, res) => {
+app.get('/info', (_req, res) => {
   res.json({
     name: 'kibana-mcp-server',
     version: '0.1.0',
@@ -101,7 +101,7 @@ app.get('/sse', async (req, res) => {
 });
 
 // Message endpoint for client requests
-app.post('/message', async (req, res) => {
+app.post('/message', async (_req, res) => {
   // This endpoint is handled by the SSE transport
   // Just send a 200 response
   res.status(200).send();
@@ -111,9 +111,9 @@ app.post('/message', async (req, res) => {
 app.use(
   (
     err: Error,
-    req: express.Request,
+    _req: express.Request,
     res: express.Response,
-    next: express.NextFunction
+    _next: express.NextFunction
   ) => {
     console.error('Express error:', err);
     res.status(500).json({

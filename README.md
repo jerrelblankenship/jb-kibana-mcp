@@ -32,31 +32,40 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 
 ## Quick Start
 
-### Using Docker/Podman (Recommended)
+### Using Docker Compose (Recommended)
 
-1. **Clone and configure**:
+Docker Compose is the preferred way to run this server. Credentials are passed via shell environment variables so nothing is hard-coded.
+
+1. **Export your Kibana credentials** (API key **or** username/password):
    ```bash
-   git clone <repository-url>
-   cd kibana-mcp-poc
-   cp .env.example .env
-   # Edit .env with your Kibana credentials
+   # Option A: API key
+   export KIBANA_API_KEY=your_api_key_here
+
+   # Option B: Username/password
+   export KIBANA_USERNAME=your_username
+   export KIBANA_PASSWORD=your_password
    ```
 
-2. **Run with Docker Compose**:
+2. **Build and start**:
    ```bash
-   docker-compose up --build
+   docker compose up --build -d
    ```
 
-3. **Or with Podman**:
-   ```bash
-   podman build -t kibana-mcp .
-   podman run -p 3000:3000 --env-file .env kibana-mcp
-   ```
-
-4. **Verify it's running**:
+3. **Verify it's running**:
    ```bash
    curl http://localhost:3000/health
    ```
+
+4. **View logs / stop**:
+   ```bash
+   docker compose logs -f
+   docker compose down
+   ```
+
+The `KIBANA_URL` defaults to `https://localhost:5601` and can be overridden:
+```bash
+export KIBANA_URL=https://your-kibana-instance.com
+```
 
 ### Local Development
 
@@ -196,7 +205,7 @@ Claude Code connects to MCP servers running over HTTP/SSE. You have two options:
 
 1. **Start the server**:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 2. **Add to Claude Code settings** (`~/.config/claude-code/settings.json` on Linux/macOS or `%APPDATA%\claude-code\settings.json` on Windows):
@@ -285,7 +294,7 @@ If your tool requires stdio transport, use `mcp-proxy` to bridge:
 npm install -g @modelcontextprotocol/mcp-proxy
 
 # Start the HTTP server
-docker-compose up -d
+docker compose up -d
 
 # Run proxy in stdio mode
 mcp-proxy stdio http://localhost:3000/sse
@@ -355,13 +364,13 @@ docker run -d \
 
 ```bash
 # Start
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop
-docker-compose down
+docker compose down
 ```
 
 ## Development
@@ -438,7 +447,7 @@ docker logs kibana-mcp-server
 docker exec -it kibana-mcp-server /bin/sh
 
 # Rebuild without cache
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 ## Contributing

@@ -5,6 +5,7 @@
 import { KibanaConfig } from './types.js';
 
 export interface AuthHeaders {
+  [key: string]: string | undefined;
   'kbn-xsrf': string;
   'Content-Type': string;
   Authorization?: string;

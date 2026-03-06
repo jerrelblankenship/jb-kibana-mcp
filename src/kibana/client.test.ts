@@ -33,7 +33,7 @@ describe('KibanaClient', () => {
       post: mockPost,
       interceptors: {
         response: {
-          use: vi.fn((success, error) => {
+          use: vi.fn((_success, error) => {
             // Store the error handler for testing
             (mockGet as any).errorHandler = error;
             (mockPost as any).errorHandler = error;
