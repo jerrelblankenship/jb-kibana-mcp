@@ -329,11 +329,64 @@ kibana-mcp-server/
 
 ### Testing
 
+**Unit tests** (no external dependencies, mocked Kibana):
+
 ```bash
 npm test                       # run once
 npm run test:watch             # watch mode
 npm run test:coverage          # with coverage report
+```
 
+**Integration tests** (require a live Kibana instance):
+
+Integration tests start an in-process MCP server, connect over SSE, and exercise
+every tool and resource against real Kibana. They are kept separate from unit
+tests so `npm test` stays fast and offline.
+
+1. Set environment variables — the tests load `.env` via dotenv, so values
+   already in `.env` (like `KIBANA_URL`) are picked up automatically. Shell
+   environment variables take precedence. You need:
+
+   ```bash
+   # Already in .env:
+   KIBANA_URL=https://your-kibana-instance.com
+
+   # Set in your shell (or add to .env):
+   export KIBANA_API_KEY=your-api-key
+   # — or —
+   export KIBANA_USERNAME=you@example.com
+   export KIBANA_PASSWORD=your-password
+   ```
+
+2. Run:
+
+   ```bash
+   npm run test:integration
+   ```
+
+   If `KIBANA_URL` or credentials are missing, the tests skip automatically
+   (no failures).
+
+**What the integration tests cover:**
+
+| Area | Tests |
+|------|-------|
+| MCP handshake | SSE connect, initialize, initialized notification |
+| `tools/list` | All 7 tools registered |
+| `resources/list` | All 4 resources registered |
+| `list_dashboards` | Pagination, search filtering |
+| `get_dashboard` | Fetch by ID |
+| `export_dashboard` | NDJSON export with references |
+| `list_visualizations` | Listing |
+| `get_visualization` | Fetch by ID |
+| `list_data_views` | Listing |
+| `search_logs` | match_all, size limits, sort |
+| `resources/read` | Read dashboards, data-views, dashboard by ID |
+| Error handling | Nonexistent dashboard, unknown tool |
+
+**Manual testing:**
+
+```bash
 # Health check
 curl http://localhost:3000/health
 
