@@ -197,7 +197,16 @@ Query Elasticsearch data through Kibana.
 
 ## Connecting to AI Assistants
 
-### Claude Code (SSE transport)
+This server supports two transports. They share the same core server logic (`src/server.ts`) but differ in how the client communicates with it:
+
+| | **HTTP/SSE** (`src/http-server.ts`) | **stdio** (`src/index.ts`) |
+|---|---|---|
+| **How it works** | Long-running HTTP server. Clients connect via Server-Sent Events (SSE) and send JSON-RPC over POST requests. | Client spawns the server as a child process. JSON-RPC messages flow over stdin/stdout. |
+| **When to use** | Remote/containerized deployments, Claude Code, any network-based MCP client | Local-only usage, Claude Desktop app |
+| **Run with** | `docker compose up -d` or `npm run dev:http` | `npm run dev` or `npm start` |
+| **Entry point** | `src/http-server.ts` | `src/index.ts` |
+
+### Claude Code (HTTP/SSE transport)
 
 Claude Code connects to MCP servers over SSE. Start the HTTP server first, then register it with Claude Code.
 
@@ -239,7 +248,7 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "kibana": {
       "command": "node",
-      "args": ["/path/to/kibana-mcp-server/dist/index.js"],
+      "args": ["/path/to/jb-kibana-mcp/dist/index.js"],
       "env": {
         "KIBANA_URL": "https://your-kibana.com",
         "KIBANA_API_KEY": "your-api-key"
@@ -303,10 +312,10 @@ docker compose down
 ### Project Structure
 
 ```
-kibana-mcp-server/
+jb-kibana-mcp/
 ├── src/
-│   ├── index.ts              # Stdio entry point
-│   ├── http-server.ts        # HTTP/SSE entry point
+│   ├── index.ts              # Stdio transport entry point (Claude Desktop)
+│   ├── http-server.ts        # HTTP/SSE transport entry point (Claude Code, Docker)
 │   ├── server.ts             # Core MCP server logic
 │   ├── kibana/
 │   │   ├── client.ts         # Kibana API client
