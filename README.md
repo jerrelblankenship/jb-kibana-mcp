@@ -1,5 +1,7 @@
 # Kibana MCP Server
 
+[![CI](https://github.com/jerrelblankenship/jb-kibana-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jerrelblankenship/jb-kibana-mcp/actions/workflows/ci.yml)
+
 A Model Context Protocol (MCP) server that enables AI assistants to interact with Kibana dashboards, visualizations, and Elasticsearch data through a standardized interface.
 
 ## Features
@@ -441,6 +443,10 @@ docker exec -it kibana-mcp-server /bin/sh
 docker compose build --no-cache
 ```
 
+## CI
+
+A GitHub Actions workflow runs on every pull request targeting `main` and on pushes to `main`. It builds the project and runs unit tests across Node.js 20 and 22. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:
@@ -449,6 +455,7 @@ Contributions are welcome! Please follow these guidelines:
 2. Follow existing code style
 3. Add tests for new features
 4. Update documentation
+5. Ensure CI passes — the build and unit tests must succeed before merging
 
 ## License
 
