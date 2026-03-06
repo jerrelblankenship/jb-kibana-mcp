@@ -2,7 +2,7 @@
  * Integration tests for HTTP Server
  */
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 
@@ -35,7 +35,7 @@ describe('HTTP Server Integration', () => {
     app.use(express.json());
 
     // Health check endpoint
-    app.get('/health', (req, res) => {
+    app.get('/health', (_req, res) => {
       res.status(200).json({
         status: 'healthy',
         service: 'kibana-mcp-server',
@@ -45,7 +45,7 @@ describe('HTTP Server Integration', () => {
     });
 
     // Server info endpoint
-    app.get('/info', (req, res) => {
+    app.get('/info', (_req, res) => {
       res.json({
         name: 'kibana-mcp-server',
         version: '0.1.0',
@@ -67,9 +67,9 @@ describe('HTTP Server Integration', () => {
     app.use(
       (
         err: Error,
-        req: express.Request,
+        _req: express.Request,
         res: express.Response,
-        next: express.NextFunction
+        _next: express.NextFunction
       ) => {
         res.status(500).json({
           error: 'Internal server error',

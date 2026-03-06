@@ -4,7 +4,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { registerResources } from './index.js';
-import { KibanaClient } from '../kibana/client.js';
 
 describe('MCP Resources', () => {
   let mockServer: any;
