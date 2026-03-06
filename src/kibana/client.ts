@@ -232,7 +232,8 @@ export class KibanaClient {
       }
     );
 
-    return response.data;
+    // Kibana wraps the ES response under rawResponse
+    return response.data.rawResponse ?? response.data;
   }
 
   /**

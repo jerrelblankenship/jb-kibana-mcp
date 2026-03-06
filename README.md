@@ -1,5 +1,7 @@
 # Kibana MCP Server
 
+[![CI](https://github.com/jerrelblankenship/jb-kibana-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jerrelblankenship/jb-kibana-mcp/actions/workflows/ci.yml)
+
 A Model Context Protocol (MCP) server that enables AI assistants to interact with Kibana dashboards, visualizations, and Elasticsearch data through a standardized interface.
 
 ## Features
@@ -197,120 +199,49 @@ Query Elasticsearch data through Kibana.
 
 ## Connecting to AI Assistants
 
-### Claude Code
+This server supports two transports. They share the same core server logic (`src/server.ts`) but differ in how the client communicates with it:
 
-Claude Code connects to MCP servers running over HTTP/SSE. You have two options:
+| | **HTTP/SSE** (`src/http-server.ts`) | **stdio** (`src/index.ts`) |
+|---|---|---|
+| **How it works** | Long-running HTTP server. Clients connect via Server-Sent Events (SSE) and send JSON-RPC over POST requests. | Client spawns the server as a child process. JSON-RPC messages flow over stdin/stdout. |
+| **When to use** | Remote/containerized deployments, Claude Code, any network-based MCP client | Local-only usage, Claude Desktop app |
+| **Run with** | `docker compose up -d` or `npm run dev:http` | `npm run dev` or `npm start` |
+| **Entry point** | `src/http-server.ts` | `src/index.ts` |
 
-#### Option 1: Using Docker (Recommended)
+### Claude Code (HTTP/SSE transport)
 
-1. **Start the server**:
-   ```bash
-   docker compose up -d
-   ```
+Claude Code connects to MCP servers over SSE. Start the HTTP server first, then register it with Claude Code.
 
-2. **Add to Claude Code settings** (`~/.config/claude-code/settings.json` on Linux/macOS or `%APPDATA%\claude-code\settings.json` on Windows):
-   ```json
-   {
-     "mcpServers": {
-       "kibana": {
-         "url": "http://localhost:3000"
-       }
-     }
-   }
-   ```
+#### Option 1: CLI (Recommended)
 
-3. **Restart Claude Code** to load the new MCP server.
+```bash
+# Start the server
+docker compose up -d
 
-#### Option 2: Direct Configuration with Environment Variables
+# Add as a user-scoped MCP server
+claude mcp add --scope user --transport sse kibana http://localhost:3000/sse
+```
+
+#### Option 2: Project config (`.mcp.json`)
+
+Create `.mcp.json` in your project root (shared with the team via version control):
 
 ```json
 {
   "mcpServers": {
     "kibana": {
-      "url": "http://localhost:3000",
-      "env": {
-        "KIBANA_URL": "https://your-kibana.com",
-        "KIBANA_API_KEY": "your-api-key",
-        "MCP_TRANSPORT": "http",
-        "HTTP_PORT": "3000"
-      }
+      "type": "sse",
+      "url": "http://localhost:3000/sse"
     }
   }
 }
 ```
 
-Then start the server manually:
-```bash
-npm run start:http
-```
+**Verification**: In Claude Code, type `/mcp` to see available servers. You should see "kibana" listed with its resources and tools.
 
-**Verification**: In Claude Code, type `/mcp` to see available servers. You should see "kibana" in the list with resources and tools.
+### Claude Desktop (stdio transport)
 
-### Amazon Q Developer
-
-Amazon Q Developer also supports MCP servers via HTTP/SSE transport.
-
-#### Setup with Docker
-
-1. **Start the Kibana MCP server**:
-   ```bash
-   docker run -d \
-     --name kibana-mcp \
-     -p 3000:3000 \
-     -e KIBANA_URL=https://your-kibana.com \
-     -e KIBANA_API_KEY=your-api-key \
-     -e MCP_TRANSPORT=http \
-     kibana-mcp:latest
-   ```
-
-2. **Configure Amazon Q Developer**:
-
-   Edit your Amazon Q configuration file (location varies by IDE):
-
-   **VS Code** (`settings.json`):
-   ```json
-   {
-     "amazonQ.mcp.servers": {
-       "kibana": {
-         "url": "http://localhost:3000/sse"
-       }
-     }
-   }
-   ```
-
-   **JetBrains IDEs** (Settings → Tools → Amazon Q):
-   - Add MCP Server
-   - Name: `kibana`
-   - URL: `http://localhost:3000/sse`
-
-3. **Restart your IDE** to activate the connection.
-
-#### Alternative: MCP Proxy for stdio
-
-If your tool requires stdio transport, use `mcp-proxy` to bridge:
-
-```bash
-# Install mcp-proxy globally
-npm install -g @modelcontextprotocol/mcp-proxy
-
-# Start the HTTP server
-docker compose up -d
-
-# Run proxy in stdio mode
-mcp-proxy stdio http://localhost:3000/sse
-```
-
-Then configure Amazon Q to use the proxy as a stdio command:
-```json
-{
-  "command": "mcp-proxy",
-  "args": ["stdio", "http://localhost:3000/sse"]
-}
-```
-
-### Claude Desktop (stdio mode)
-
-For local Claude Desktop app (not Claude Code), use stdio transport:
+For the Claude Desktop app, use stdio transport.
 
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
@@ -319,7 +250,7 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "kibana": {
       "command": "node",
-      "args": ["/path/to/kibana-mcp-poc/dist/index.js"],
+      "args": ["/path/to/jb-kibana-mcp/dist/index.js"],
       "env": {
         "KIBANA_URL": "https://your-kibana.com",
         "KIBANA_API_KEY": "your-api-key"
@@ -329,17 +260,22 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-### Generic HTTP/SSE Clients
+### Generic MCP Clients (SSE)
 
-Connect any MCP client to the HTTP server at:
+Any MCP client that supports SSE transport can connect to:
+
 ```
 http://localhost:3000/sse
 ```
 
-The server exposes these endpoints:
-- `GET /health` - Health check
-- `GET /info` - Server information
-- `GET /sse` - SSE connection endpoint for MCP protocol
+The SSE handshake flow:
+1. Client opens `GET /sse` — receives an `endpoint` event with a session-specific message URL
+2. Client sends JSON-RPC messages via `POST /message?sessionId=<id>`
+3. Server streams responses back over the SSE connection
+
+Additional endpoints:
+- `GET /health` — Health check (returns JSON status)
+- `GET /info` — Server metadata and capabilities
 
 ## Docker Deployment
 
@@ -378,10 +314,10 @@ docker compose down
 ### Project Structure
 
 ```
-kibana-mcp-poc/
+jb-kibana-mcp/
 ├── src/
-│   ├── index.ts              # Stdio entry point
-│   ├── http-server.ts        # HTTP/SSE entry point
+│   ├── index.ts              # Stdio transport entry point (Claude Desktop)
+│   ├── http-server.ts        # HTTP/SSE transport entry point (Claude Code, Docker)
 │   ├── server.ts             # Core MCP server logic
 │   ├── kibana/
 │   │   ├── client.ts         # Kibana API client
@@ -403,6 +339,63 @@ kibana-mcp-poc/
 3. Add corresponding Kibana client method if needed
 
 ### Testing
+
+**Unit tests** (no external dependencies, mocked Kibana):
+
+```bash
+npm test                       # run once
+npm run test:watch             # watch mode
+npm run test:coverage          # with coverage report
+```
+
+**Integration tests** (require a live Kibana instance):
+
+Integration tests start an in-process MCP server, connect over SSE, and exercise
+every tool and resource against real Kibana. They are kept separate from unit
+tests so `npm test` stays fast and offline.
+
+1. Set environment variables — the tests load `.env` via dotenv, so values
+   already in `.env` (like `KIBANA_URL`) are picked up automatically. Shell
+   environment variables take precedence. You need:
+
+   ```bash
+   # Already in .env:
+   KIBANA_URL=https://your-kibana-instance.com
+
+   # Set in your shell (or add to .env):
+   export KIBANA_API_KEY=your-api-key
+   # — or —
+   export KIBANA_USERNAME=you@example.com
+   export KIBANA_PASSWORD=your-password
+   ```
+
+2. Run:
+
+   ```bash
+   npm run test:integration
+   ```
+
+   If `KIBANA_URL` or credentials are missing, the tests skip automatically
+   (no failures).
+
+**What the integration tests cover:**
+
+| Area | Tests |
+|------|-------|
+| MCP handshake | SSE connect, initialize, initialized notification |
+| `tools/list` | All 7 tools registered |
+| `resources/list` | All 4 resources registered |
+| `list_dashboards` | Pagination, search filtering |
+| `get_dashboard` | Fetch by ID |
+| `export_dashboard` | NDJSON export with references |
+| `list_visualizations` | Listing |
+| `get_visualization` | Fetch by ID |
+| `list_data_views` | Listing |
+| `search_logs` | match_all, size limits, sort |
+| `resources/read` | Read dashboards, data-views, dashboard by ID |
+| Error handling | Nonexistent dashboard, unknown tool |
+
+**Manual testing:**
 
 ```bash
 # Health check
@@ -450,6 +443,10 @@ docker exec -it kibana-mcp-server /bin/sh
 docker compose build --no-cache
 ```
 
+## CI
+
+A GitHub Actions workflow runs on every pull request targeting `main` and on pushes to `main`. It builds the project and runs unit tests across Node.js 20 and 22. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:
@@ -458,6 +455,7 @@ Contributions are welcome! Please follow these guidelines:
 2. Follow existing code style
 3. Add tests for new features
 4. Update documentation
+5. Ensure CI passes — the build and unit tests must succeed before merging
 
 ## License
 
