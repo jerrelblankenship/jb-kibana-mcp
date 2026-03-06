@@ -2,13 +2,18 @@
  * MCP Tools - Executable functions
  */
 
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { KibanaClient } from '../kibana/client.js';
 
-export function registerTools(server: any, kibanaClient: KibanaClient) {
+export function registerTools(server: Server, kibanaClient: KibanaClient) {
   /**
    * Tool: List dashboards
    */
-  server.setRequestHandler('tools/list', async () => {
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
       tools: [
         {
@@ -160,23 +165,23 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
   /**
    * Tool: Call handler
    */
-  server.setRequestHandler('tools/call', async (request: any) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
     try {
       switch (name) {
         case 'list_dashboards': {
-          const { search, page = 1, perPage = 20 } = args;
+          const { search, page = 1, perPage = 20 } = args || {};
           const result = await kibanaClient.listDashboards(
-            search,
-            page,
-            Math.min(perPage, 100)
+            search as string | undefined,
+            page as number,
+            Math.min(perPage as number, 100)
           );
 
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(
                   {
                     total: result.total,
@@ -198,13 +203,13 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
         }
 
         case 'get_dashboard': {
-          const { id } = args;
+          const { id } = args as { id: string };
           const dashboard = await kibanaClient.getDashboard(id);
 
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(dashboard, null, 2),
               },
             ],
@@ -212,7 +217,7 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
         }
 
         case 'export_dashboard': {
-          const { id, includeReferences = true } = args;
+          const { id, includeReferences = true } = args as { id: string; includeReferences?: boolean };
           const exported = await kibanaClient.exportDashboard(
             id,
             includeReferences
@@ -221,7 +226,7 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(exported, null, 2),
               },
             ],
@@ -229,17 +234,17 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
         }
 
         case 'list_visualizations': {
-          const { search, page = 1, perPage = 20 } = args;
+          const { search, page = 1, perPage = 20 } = args || {};
           const result = await kibanaClient.listVisualizations(
-            search,
-            page,
-            Math.min(perPage, 100)
+            search as string | undefined,
+            page as number,
+            Math.min(perPage as number, 100)
           );
 
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(
                   {
                     total: result.total,
@@ -261,13 +266,13 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
         }
 
         case 'get_visualization': {
-          const { id } = args;
+          const { id } = args as { id: string };
           const visualization = await kibanaClient.getVisualization(id);
 
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(visualization, null, 2),
               },
             ],
@@ -280,7 +285,7 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(
                   {
                     total: dataViews.total,
@@ -299,7 +304,13 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
         }
 
         case 'search_logs': {
-          const { index, query, size = 10, from = 0, sort } = args;
+          const { index, query, size = 10, from = 0, sort } = args as {
+            index: string;
+            query?: Record<string, unknown>;
+            size?: number;
+            from?: number;
+            sort?: unknown[];
+          };
 
           const searchParams = {
             index,
@@ -316,7 +327,7 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(
                   {
                     took: result.took,
@@ -343,7 +354,7 @@ export function registerTools(server: any, kibanaClient: KibanaClient) {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `Error executing tool ${name}: ${error.message}`,
           },
         ],

@@ -2,13 +2,18 @@
  * MCP Resources - Read-only data exposure
  */
 
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import {
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { KibanaClient } from '../kibana/client.js';
 
-export function registerResources(server: any, kibanaClient: KibanaClient) {
+export function registerResources(server: Server, kibanaClient: KibanaClient) {
   /**
    * Resource: List all dashboards
    */
-  server.setRequestHandler('resources/list', async () => {
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
     return {
       resources: [
         {
@@ -42,7 +47,7 @@ export function registerResources(server: any, kibanaClient: KibanaClient) {
   /**
    * Resource: Read specific resource content
    */
-  server.setRequestHandler('resources/read', async (request: any) => {
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const uri = request.params.uri;
 
     try {

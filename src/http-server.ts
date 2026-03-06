@@ -52,6 +52,9 @@ const config: ServerConfig = {
 const app = express();
 app.use(express.json());
 
+// Store active SSE transports keyed by session ID
+const transports = new Map<string, SSEServerTransport>();
+
 // Health check endpoint
 app.get('/health', (_req, res) => {
   res.status(200).json({
@@ -74,37 +77,63 @@ app.get('/info', (_req, res) => {
 });
 
 // SSE endpoint for MCP communication
-app.get('/sse', async (req, res) => {
-  console.log('New SSE connection established');
+app.get('/sse', async (_req, res) => {
+  console.error('New SSE connection established');
 
   // Create a new MCP server instance for this connection
   const mcpServer = createMcpServer(config);
   const transport = new SSEServerTransport('/message', res);
 
-  try {
-    await mcpServer.connect(transport);
-  } catch (error) {
-    console.error('Failed to establish SSE connection:', error);
-    res.status(500).send('Failed to establish SSE connection');
-    return;
-  }
+  // Store the transport by session ID so we can route POST messages to it
+  transports.set(transport.sessionId, transport);
+  console.error(`SSE session created: ${transport.sessionId}`);
 
   // Handle connection close
-  req.on('close', async () => {
-    console.log('SSE connection closed');
+  res.on('close', async () => {
+    console.error(`SSE connection closed: ${transport.sessionId}`);
+    transports.delete(transport.sessionId);
     try {
       await mcpServer.close();
     } catch (error) {
       console.error('Error closing MCP server:', error);
     }
   });
+
+  try {
+    await mcpServer.connect(transport);
+  } catch (error) {
+    console.error('Failed to establish SSE connection:', error);
+    transports.delete(transport.sessionId);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to establish SSE connection');
+    }
+  }
 });
 
-// Message endpoint for client requests
-app.post('/message', async (_req, res) => {
-  // This endpoint is handled by the SSE transport
-  // Just send a 200 response
-  res.status(200).send();
+// Message endpoint for client requests - route to the correct SSE transport
+app.post('/message', async (req, res) => {
+  const sessionId = req.query.sessionId as string;
+
+  if (!sessionId) {
+    res.status(400).json({ error: 'Missing sessionId query parameter' });
+    return;
+  }
+
+  const transport = transports.get(sessionId);
+  if (!transport) {
+    res.status(404).json({ error: 'Session not found. It may have expired.' });
+    return;
+  }
+
+  try {
+    // Pass req.body as parsedBody since express.json() already consumed the stream
+    await transport.handlePostMessage(req, res, req.body);
+  } catch (error) {
+    console.error('Error handling message:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to handle message' });
+    }
+  }
 });
 
 // Error handling middleware
@@ -133,17 +162,28 @@ app.use((req, res) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Kibana MCP Server running on http://0.0.0.0:${PORT}`);
-  console.log(`📊 Connected to Kibana: ${config.kibana.url}`);
-  console.log(`🔗 SSE endpoint: http://0.0.0.0:${PORT}/sse`);
-  console.log(`❤️  Health check: http://0.0.0.0:${PORT}/health`);
+  console.error(`Kibana MCP Server running on http://0.0.0.0:${PORT}`);
+  console.error(`Connected to Kibana: ${config.kibana.url}`);
+  console.error(`SSE endpoint: http://0.0.0.0:${PORT}/sse`);
+  console.error(`Health check: http://0.0.0.0:${PORT}/health`);
 });
 
 // Graceful shutdown
 const shutdown = async () => {
-  console.log('Shutting down HTTP server...');
+  console.error('Shutting down HTTP server...');
+
+  // Close all active transports
+  for (const [sessionId, transport] of transports) {
+    try {
+      await transport.close();
+    } catch (error) {
+      console.error(`Error closing transport ${sessionId}:`, error);
+    }
+  }
+  transports.clear();
+
   server.close(() => {
-    console.log('HTTP server closed');
+    console.error('HTTP server closed');
     process.exit(0);
   });
 

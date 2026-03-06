@@ -13,10 +13,11 @@ describe('MCP Tools', () => {
 
   beforeEach(() => {
     mockServer = {
-      setRequestHandler: vi.fn((type, handler) => {
-        if (type === 'tools/list') {
+      setRequestHandler: vi.fn((schema: any, handler: any) => {
+        const method = schema?.shape?.method?.value;
+        if (method === 'tools/list') {
           toolsListHandler = handler;
-        } else if (type === 'tools/call') {
+        } else if (method === 'tools/call') {
           toolsCallHandler = handler;
         }
       }),

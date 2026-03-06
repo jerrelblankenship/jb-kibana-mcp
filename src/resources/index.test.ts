@@ -13,10 +13,11 @@ describe('MCP Resources', () => {
 
   beforeEach(() => {
     mockServer = {
-      setRequestHandler: vi.fn((type, handler) => {
-        if (type === 'resources/list') {
+      setRequestHandler: vi.fn((schema: any, handler: any) => {
+        const method = schema?.shape?.method?.value;
+        if (method === 'resources/list') {
           resourcesListHandler = handler;
-        } else if (type === 'resources/read') {
+        } else if (method === 'resources/read') {
           resourcesReadHandler = handler;
         }
       }),
