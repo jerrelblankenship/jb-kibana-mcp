@@ -47,7 +47,7 @@ AI Assistant → MCP Protocol → MCP Server (this project) → Kibana REST API 
 - **ESM project** — `"type": "module"` in package.json. All imports must use `.js` extensions (e.g., `import { foo } from './bar.js'`), even when importing `.ts` files.
 - **TypeScript strict mode** with `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`.
 - **Module**: ES2022 with `node` moduleResolution. Output to `dist/`.
-- **Logging uses stderr** (`console.error`) since stdout is reserved for MCP protocol in stdio mode.
+- **Logging**: `src/index.ts` (stdio transport) must use `console.error` (stderr) for all logging because stdout carries MCP JSON-RPC messages. `src/http-server.ts` (HTTP/SSE transport) does not use stdout for protocol traffic, so use `console.log` for informational messages and reserve `console.error` for actual errors.
 
 ## Testing
 

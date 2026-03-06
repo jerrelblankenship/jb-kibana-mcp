@@ -78,7 +78,7 @@ app.get('/info', (_req, res) => {
 
 // SSE endpoint for MCP communication
 app.get('/sse', async (_req, res) => {
-  console.error('New SSE connection established');
+  console.log('New SSE connection established');
 
   // Create a new MCP server instance for this connection
   const mcpServer = createMcpServer(config);
@@ -86,11 +86,11 @@ app.get('/sse', async (_req, res) => {
 
   // Store the transport by session ID so we can route POST messages to it
   transports.set(transport.sessionId, transport);
-  console.error(`SSE session created: ${transport.sessionId}`);
+  console.log(`SSE session created: ${transport.sessionId}`);
 
   // Handle connection close
   res.on('close', async () => {
-    console.error(`SSE connection closed: ${transport.sessionId}`);
+    console.log(`SSE connection closed: ${transport.sessionId}`);
     transports.delete(transport.sessionId);
     try {
       await mcpServer.close();
@@ -162,15 +162,15 @@ app.use((req, res) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.error(`Kibana MCP Server running on http://0.0.0.0:${PORT}`);
-  console.error(`Connected to Kibana: ${config.kibana.url}`);
-  console.error(`SSE endpoint: http://0.0.0.0:${PORT}/sse`);
-  console.error(`Health check: http://0.0.0.0:${PORT}/health`);
+  console.log(`Kibana MCP Server running on http://0.0.0.0:${PORT}`);
+  console.log(`Connected to Kibana: ${config.kibana.url}`);
+  console.log(`SSE endpoint: http://0.0.0.0:${PORT}/sse`);
+  console.log(`Health check: http://0.0.0.0:${PORT}/health`);
 });
 
 // Graceful shutdown
 const shutdown = async () => {
-  console.error('Shutting down HTTP server...');
+  console.log('Shutting down HTTP server...');
 
   // Close all active transports
   for (const [sessionId, transport] of transports) {
@@ -183,7 +183,7 @@ const shutdown = async () => {
   transports.clear();
 
   server.close(() => {
-    console.error('HTTP server closed');
+    console.log('HTTP server closed');
     process.exit(0);
   });
 
